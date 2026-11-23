@@ -1,114 +1,48 @@
-import { useEffect, useRef, useState } from 'react';
-import { createRoot, hydrateRoot } from 'react-dom/client';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { ArrowDown, ArrowRight, ArrowUpRight, Blocks, Building2, Layers, Mail, MessageCircle, Pause, Play, Plus, Scissors } from 'lucide-react';
+/// <reference types="vite/client" />
+import {useEffect,useRef,useState} from 'react';
+import {createRoot,hydrateRoot} from 'react-dom/client';
+import {motion,useReducedMotion} from 'motion/react';
+import {Check,Menu,X,MessageCircle,Mail,Phone,Search,FileImage,Layers,Building2,Factory,ShieldCheck,Handshake} from 'lucide-react';
 import contact from './contact.json';
+const wa=(text='Olá! Gostaria de conversar sobre soluções em EPS para meu projeto.')=>'https://wa.me/'+contact.phone+'?text='+encodeURIComponent(text);
+type Product={id:string;name:string;category:string;tag:string;image:string;summary:string;description:string;uses:string[];gallery?:string[];material?:string};
+const products:Product[]=[
+{id:'monolit',name:'Painel Monolit®',category:'Construção civil',tag:'Paredes e fechamentos',image:'monolit-painel',summary:'Painéis em EPS com telas de aço para sistemas de paredes e fechamentos.',description:'O Painel Monolit® combina um núcleo de EPS com telas de aço. A solução integra sistemas construtivos de paredes, conforme a configuração do produto e o projeto. A Silvério ajuda a identificar a linha e consultar as condições de fornecimento.',uses:['Paredes e fechamentos','Construção residencial e comercial','Consulta das versões de fechamento e estrutural'],gallery:['monolit-obra','monolit-painel']},
+{id:'lajotas',name:'Lajotas de EPS',category:'Construção civil',tag:'Enchimento de lajes',image:'lajotas-aplicacao',summary:'Elementos leves de enchimento para a composição de lajes.',description:'Lajotas de EPS para enchimento de lajes. Formato, dimensões e demais características devem acompanhar o sistema previsto no projeto. Conte com a Silvério para conversar sobre a necessidade da obra e programar a compra.',uses:['Lajes com elementos de enchimento','Construtoras e lajeiros','Peças conforme a especificação da obra'],material:'manual-lajotas'},
+{id:'baldrame',name:'BaldramePRO',category:'Construção civil',tag:'Forma leve para vigas',image:'baldrame-pro',summary:'Uma solução em EPS para a etapa de execução de vigas baldrame.',description:'BaldramePRO, da Kingspan Isoeste, é uma forma leve para vigas. A proposta apresentada pelo fabricante busca facilitar a concretagem e racionalizar etapas de execução. Consulte a aplicação e as medidas para seu projeto.',uses:['Formas para vigas baldrame','Planejamento das etapas da obra','Consulta de medidas e fornecimento'],gallery:['baldrame-pro','baldrame-detalhe','baldrame-aplicacao'],material:'baldrame-detalhe'},
+{id:'canaletas',name:'Canaletas de EPS',category:'Construção civil',tag:'Peças para sua obra',image:'canaleta',summary:'Peças em EPS com perfil de canaleta. Consulte formatos e aplicações.',description:'Canaletas de EPS para aplicações compatíveis com o sistema construtivo especificado. Envie as medidas, a quantidade e o uso previsto para consultar as opções com a Silvério.',uses:['Peças com perfil de canaleta','Fornecimento conforme a aplicação','Consulta de formatos e dimensões']},
+{id:'isolamento',name:'Placas de EPS',category:'Isolamento',tag:'Isolamento térmico',image:'placa-eps',summary:'Placas para aplicações de isolamento e composição de sistemas.',description:'Placas de EPS para isolamento térmico e outras aplicações especificadas em projeto. Espessura, dimensões e características do material são alinhadas conforme o uso previsto.',uses:['Isolamento térmico','Aplicações em lajes e outros sistemas','Consulta de espessuras e dimensões']},
+{id:'geofoam',name:'Geofoam',category:'Infraestrutura',tag:'Enchimento leve',image:'geofoam-aplicacao',summary:'EPS em aplicações de enchimento leve para obras de infraestrutura.',description:'Geofoam é uma aplicação de EPS como enchimento leve em obras de engenharia. O material e a configuração de uso dependem da especificação do responsável pelo projeto. Envie sua demanda para consultar o fornecimento.',uses:['Enchimentos leves de engenharia','Infraestrutura e obras viárias','Fornecimento conforme especificação'],material:'geofoam-aplicacao'},
+{id:'blocos',name:'Blocos para recorte',category:'Indústria',tag:'Transformação de EPS',image:'placa-eps',summary:'Fornecimento para recortadores e processos de transformação.',description:'Blocos e peças de EPS para recorte e transformação industrial. Compartilhe o formato da peça final, as medidas de partida e a demanda por lote para consultar as possibilidades de fornecimento. A imagem ilustra o material EPS.',uses:['Recortadores de EPS','Transformação industrial','Consulta de dimensões, densidades e lotes']},
+{id:'colchoes',name:'EPS para colchões',category:'Indústria',tag:'Indústria colchoeira',image:'placa-eps',summary:'Consulte peças e formatos para sua linha de fabricação de colchões.',description:'Soluções em EPS para fabricantes de colchões, com consulta de formatos, dimensões e características necessárias ao processo. A imagem apresenta uma peça de EPS; o formato final é definido na cotação.',uses:['Fabricantes de colchões','Peças conforme a demanda industrial','Programação de lotes e entregas']},
+{id:'tapume',name:'Tapume Leaf',category:'Construção civil',tag:'Organização do canteiro',image:'tapume-leaf',summary:'Uma opção de fechamento de canteiro com acabamento visual estampado.',description:'O Tapume Leaf, apresentado nos materiais da Kingspan Isoeste, é uma opção para o fechamento e a apresentação visual do canteiro de obras. Consulte a disponibilidade e as características do produto.',uses:['Fechamento de canteiros','Organização visual da obra','Consulta de fornecimento'],material:'tapume-leaf'}];
+const assets=import.meta.glob<string>('./assets-produtos/*.webp',{eager:true,query:'?url',import:'default'});
+const img=(name:string)=>assets['./assets-produtos/'+name+'.webp'];
+const categories=['Todas','Construção civil','Infraestrutura','Isolamento','Indústria'];
+const links=[['solucoes','Soluções'],['aplicacoes','Aplicações'],['sobre','Sobre nós'],['materiais','Materiais'],['contato','Contato']];
 
-const links = [['sobre','Sobre nós'],['solucoes','Soluções'],['blog','Blog'],['contato','Contato']];
-const solutions = [
-  {title:'Painéis em EPS', icon:Building2, summary:'Converse sobre soluções em EPS para o fechamento e a construção de paredes.'},
-  {title:'Lajotas para lajes', icon:Layers, summary:'Lajotas em EPS para lajes nervuradas. Informe o sistema de laje e as dimensões previstas no projeto.'},
-  {title:'Blocos para recorte', icon:Scissors, summary:'Blocos de EPS para recortadores e aplicações industriais. Consulte dimensões e densidades.'},
-  {title:'EPS para colchões', icon:Blocks, summary:'Soluções de enchimento em EPS para fabricantes de colchões. Informe o formato e a demanda da sua linha de produção.'},
-  {title:'Placas de isolamento', icon:Layers, summary:'Placas em EPS para isolamento térmico. Consulte opções de acordo com a aplicação e a especificação do projeto.'},
-];
-const articles = [
-  {tag:'Planejamento',title:'O que enviar para receber uma cotação de EPS?',body:'Informe a aplicação, as dimensões, a quantidade estimada, o CEP de entrega e a data em que precisa receber o material. Se o projeto já especifica a densidade ou o tipo de peça, inclua esses dados. Assim a equipe consegue consultar a opção adequada e alinhar o prazo com você.'},
-  {tag:'Construção civil',title:'Como conversar sobre lajotas para sua obra',body:'Comece pelo projeto da laje. Confira com o responsável técnico as dimensões e o formato das peças previstos para o sistema escolhido. Ao cotar, compartilhe também a quantidade, o local de entrega e a etapa da obra em que as lajotas serão usadas.'},
-  {tag:'Compras industriais',title:'O que definir antes de pedir blocos para recorte',body:'Descreva a peça final, as medidas do bloco de partida e as características exigidas pelo seu processo. Informe a demanda por lote e a frequência de compra. Esses dados ajudam a conversar sobre material, disponibilidade e programação das entregas.'},
-];
-const whatsapp = (text='Olá! Gostaria de conversar sobre soluções em EPS.') => 'https://wa.me/'+contact.phone+'?text='+encodeURIComponent(text);
-
-function Solutions(){
-  const [active,setActive]=useState(2);
-  const [paused,setPaused]=useState(false);
-  const [engaged,setEngaged]=useState(false);
-  const reduced=useReducedMotion();
-  useEffect(()=>{
-    if(paused||engaged||reduced)return;
-    const timer=window.setInterval(()=>setActive(prev=>(prev+1)%solutions.length),5500);
-    return ()=>window.clearInterval(timer);
-  },[paused,engaged,reduced]);
-  const current=solutions[active];
-  const Icon=current.icon;
-  return <section className="solutions" id="solucoes">
-    <div className="shell solution-intro"><p className="mono label">Soluções</p><h2>EPS da obra<br/>à indústria.</h2><p>Selecione a aplicação para conhecer as opções e conversar com a Silvério.</p></div>
-    <div className="shell chapter-grid" onMouseEnter={()=>setEngaged(true)} onMouseLeave={()=>setEngaged(false)}>
-      <div className="chapter-visual">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={current.title} className="chapter-image" initial={reduced?false:{opacity:0,scale:1.03}} animate={{opacity:1,scale:1}} exit={{opacity:0}} transition={{duration:reduced?0:.32}}>
-            <Icon className="chapter-fallback" size={70} strokeWidth={.8}/>
-            <span className="chapter-name">{current.title}</span>
-          </motion.div>
-        </AnimatePresence>
-        <div className="chapter-control"><span className="mono">{String(active+1).padStart(2,'0')} / 05</span><button type="button" onClick={()=>setPaused(!paused)} aria-label={paused?'Reproduzir apresentação':'Pausar apresentação'}>{paused?<Play size={17}/>:<Pause size={17}/>}</button></div>
-      </div>
-      <div className="chapter-list" aria-label="Aplicações de EPS">
-        {solutions.map((item,i)=><button type="button" className="chapter-option" key={item.title} aria-pressed={active===i} onClick={()=>{setActive(i);setPaused(true);}}><span className="mono">{String(i+1).padStart(2,'0')}</span><strong>{item.title}</strong><ArrowUpRight size={21}/></button>)}
-        <p className="chapter-summary">{current.summary}</p>
-        <a className="button pale" href={whatsapp('Olá! Gostaria de cotar '+current.title.toLowerCase()+'.')} target="_blank" rel="noopener noreferrer">Consultar esta solução <ArrowUpRight size={18}/></a>
-      </div>
-    </div>
-  </section>;
+const comparisons:Record<string,{material:string;application:string}>={monolit:{material:'monolit-painel',application:'monolit-obra'},lajotas:{material:'placa-eps',application:'lajotas-aplicacao'},baldrame:{material:'baldrame-pro',application:'baldrame-aplicacao'},isolamento:{material:'placa-eps',application:'lajotas-aplicacao'}};
+function Comparison({product}:{product:Product}){
+ const [position,setPosition]=useState(50);const pair=comparisons[product.id];
+ if(!pair)return null;
+ return <div className="comparison" role="group" aria-label={'Material e aplicação: '+product.name}>
+  <img className="comparison-application" src={img(pair.application)} alt={'Exemplo de aplicação de '+product.name} loading="lazy" draggable={false}/>
+  <div className="comparison-material" style={{clipPath:`inset(0 ${100-position}% 0 0)`}}><img src={img(pair.material)} alt={'Material: '+product.name} loading="lazy" draggable={false}/></div>
+  <span className="comparison-label left">Material</span><span className="comparison-label right">Aplicação</span>
+  <span className="comparison-divider" style={{left:position+'%'}} aria-hidden="true"><span><svg viewBox="0 0 30 22" width="30" height="22"><path d="m10 5-6 6 6 6M20 5l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2"/></svg></span></span>
+  <input type="range" min="0" max="100" step="1" value={position} aria-label={'Arrastar comparação de '+product.name} aria-valuetext={position+'% do material visível'} onChange={e=>setPosition(Number(e.target.value))}/>
+ </div>;
 }
 
-export function App(){
-  const [menu,setMenu]=useState(false);
-  const menuButton=useRef<HTMLButtonElement>(null);
-  const reduced=useReducedMotion();
-  useEffect(()=>{
-    if(!menu)return;
-    const close=(event:KeyboardEvent)=>{if(event.key==='Escape'){setMenu(false);menuButton.current?.focus();}};
-    window.addEventListener('keydown',close);
-    return ()=>window.removeEventListener('keydown',close);
-  },[menu]);
-  return <>
-    <a className="skip" href="#conteudo">Pular para o conteúdo</a>
-    <header className="masthead shell" id="inicio">
-      <div className="wordmark" aria-label="Silvério">{[...'SILVÉRIO'].map((letter,i)=><motion.span aria-hidden="true" key={i} initial={false} animate={reduced?undefined:{y:['36%','0%'],opacity:[0,1]}} transition={{delay:i*.045,duration:.7,ease:[.16,1,.3,1]}}>{letter}</motion.span>)}</div>
-      <div className="mast-nav">
-        <a className="mono identity" href="#inicio">Representação<br/>comercial</a>
-        <p className="mono tagline">Atendimento humano.<br/>Conhecimento técnico em EPS.</p>
-        <nav className="nav-links mono" aria-label="Menu principal">{links.map(([id,label])=><a href={'#'+id} key={id}>{label}</a>)}</nav>
-        <button className="menu-button" type="button" ref={menuButton} aria-label={menu?'Fechar menu':'Abrir menu'} aria-controls="menu-expandido" aria-expanded={menu} onClick={()=>setMenu(!menu)}><span/><span/></button>
-      </div>
-      <AnimatePresence>{menu&&<motion.nav className="menu-panel mono" id="menu-expandido" aria-label="Menu expandido" initial={{opacity:0,y:-8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}>{links.map(([id,label])=><a key={id} href={'#'+id} onClick={()=>setMenu(false)}>{label}<ArrowUpRight size={16}/></a>)}</motion.nav>}</AnimatePresence>
-    </header>
-    <main id="conteudo">
-      <section className="hero shell">
-        <div className="hero-copy">
-          <p className="mono label"><span className="signal"/> Representação em EPS</p>
-          <h1>EPS para obras<br/>e indústria.</h1>
-          <p>Atendimento próximo para escolher o material, alinhar prazos e fazer seu pedido com segurança.</p>
-          <a className="button primary" href={whatsapp()} target="_blank" rel="noopener noreferrer"><MessageCircle size={18}/> Fale pelo WhatsApp <ArrowUpRight size={17}/></a>
-          <a className="explore mono" href="#sobre"><ArrowDown size={15}/> Conheça a Silvério</a>
-        </div>
-        <figure className="hero-media"><img src="./eps-abertura.png" alt="Blocos e painéis de poliestireno expandido" fetchPriority="high"/><figcaption className="mono">EPS · Imagem ilustrativa</figcaption></figure>
-      </section>
-      <section className="about shell" id="sobre">
-        <p className="mono label">Sobre nós</p>
-        <h2>Entendemos a sua aplicação.<br/>Acompanhamos a sua compra.</h2>
-        <p>A Silvério é representante comercial da Kingspan Isoeste e atende construtoras, engenheiros, lajeiros, fabricantes de colchões e recortadores de EPS. A conversa começa com a sua necessidade e segue com orientação técnica e comercial para alinhar material, disponibilidade e entrega.</p>
-        <div className="pills"><a href="#solucoes"><Building2 size={16}/> Construção civil</a><a href="#solucoes"><Layers size={16}/> Lajes</a><a href="#solucoes"><Scissors size={16}/> Recorte de EPS</a><a href="#solucoes"><Blocks size={16}/> Indústria</a></div>
-      </section>
-      <Solutions/>
-      <section className="blog shell" id="blog">
-        <div className="section-top"><div><p className="mono label">Blog</p><h2>Guia de compra de EPS.</h2></div><a href="https://www.silveriorepresentacao.com.br/blog" target="_blank" rel="noopener noreferrer">Ver blog da Silvério <ArrowUpRight size={16}/></a></div>
-        <div className="posts">{articles.map(item=><details key={item.title}><summary><span className="mono">{item.tag}</span><h3>{item.title}</h3><Plus size={19}/></summary><p>{item.body}</p></details>)}</div>
-      </section>
-      <section className="contact" id="contato">
-        <div className="shell contact-layout">
-          <div><p className="mono label">Contato</p><h2>Vamos falar sobre<br/>o seu projeto?</h2><p>Conte o que precisa, a quantidade prevista e o prazo da sua compra.</p></div>
-          <div className="channels"><a className="button primary" href={whatsapp()} target="_blank" rel="noopener noreferrer"><MessageCircle size={18}/> Iniciar conversa <ArrowUpRight size={18}/></a><a className="phone" href={'tel:+'+contact.phone}>{contact.display} <ArrowRight size={16}/></a>{contact.email&&<a className="phone" href={'mailto:'+contact.email}><Mail size={16}/> {contact.email}</a>}</div>
-        </div>
-      </section>
-    </main>
-    <footer className="shell footer"><a href="#inicio">SILVÉRIO<span> REPRESENTAÇÃO</span></a><span>Representação comercial em EPS</span><a href="#inicio">Voltar ao topo ↑</a></footer>
-  </>;
-}
-
-if (typeof document !== 'undefined') {
-  const root=document.getElementById('root')!;
-  if(root.hasChildNodes()) hydrateRoot(root,<App/>);
-  else createRoot(root).render(<App/>);
-}
+function Brand(){return <><span className="brand-icon" aria-hidden="true"><i/><i/><i/></span><span>SILVÉRIO<small>REPRESENTAÇÃO</small></span></>;}
+function Detail({product,onClose}:{product:Product|null;onClose:()=>void}){const ref=useRef<HTMLDialogElement>(null);const[photo,setPhoto]=useState('');useEffect(()=>{const d=ref.current;if(product){setPhoto(product.image);d?.showModal();const old=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.body.style.overflow=old;};}if(d?.open)d.close();},[product]);return <dialog ref={ref} className="product-dialog" onCancel={onClose} onClick={e=>{if(e.target===ref.current)onClose();}} aria-labelledby="product-title"><button className="dialog-close" aria-label="Fechar detalhes do produto" onClick={onClose}><X/></button>{product&&<div className="product-detail"><div className="detail-media"><img src={img(photo||product.image)} alt={product.name}/>{product.gallery&&<div className="thumbnails">{product.gallery.map((src,i)=><button key={src} aria-label={'Ver imagem '+(i+1)} aria-pressed={src===photo} onClick={()=>setPhoto(src)}><img src={img(src)} alt=""/></button>)}</div>}</div><div className="detail-copy"><span className="eyebrow">{product.tag}</span><h2 id="product-title">{product.name}</h2><p>{product.description}</p><h3>Aplicações e consulta</h3><ul>{product.uses.map(s=><li key={s}><Check size={17}/>{s}</li>)}</ul><a className="button primary" href={wa('Olá! Gostaria de cotar '+product.name+'. Posso enviar as medidas e a quantidade?')} target="_blank" rel="noopener noreferrer"><MessageCircle size={18}/>Cotar este produto</a>{product.material&&<a className="material-link" href={img(product.material)} target="_blank" rel="noopener noreferrer"><FileImage size={18}/>Ver material do fabricante</a>}<p className="detail-note">Especificações, disponibilidade e entrega são confirmadas no atendimento.</p></div></div>}</dialog>;}
+export function App(){const[menu,setMenu]=useState(false),[category,setCategory]=useState('Todas'),[query,setQuery]=useState(''),[selected,setSelected]=useState<Product|null>(null),[topic,setTopic]=useState(''),[city,setCity]=useState(''),[quantity,setQuantity]=useState(''),[message,setMessage]=useState('');const reduced=useReducedMotion();const norm=(v:string)=>v.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();const shown=products.filter(p=>(category==='Todas'||p.category===category)&&norm(p.name+' '+p.tag+' '+p.summary).includes(norm(query)));const reveal={initial:reduced?false:{opacity:0,y:24},whileInView:{opacity:1,y:0},viewport:{once:true,amount:.12},transition:{duration:.7}};useEffect(()=>{const fn=(e:KeyboardEvent)=>{if(e.key==='Escape')setMenu(false);};window.addEventListener('keydown',fn);return()=>window.removeEventListener('keydown',fn);},[]);return <><a className="skip" href="#conteudo">Pular para o conteúdo</a><header className="header"><div className="shell nav"><a className="brand" href="#inicio" aria-label="Silvério Representação, início"><Brand/></a><nav className="desktop-nav" aria-label="Menu principal">{links.map(([id,label])=><a key={id} href={'#'+id}>{label}</a>)}</nav><a className="button primary nav-contact" href={wa()} target="_blank" rel="noopener noreferrer"><MessageCircle size={17}/>Fale com a Silvério</a><button className="menu-toggle" aria-label={menu?'Fechar menu':'Abrir menu'} aria-expanded={menu} aria-controls="mobile-menu" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button></div>{menu&&<nav id="mobile-menu" className="mobile-nav shell" aria-label="Menu móvel">{links.map(([id,label])=><a key={id} href={'#'+id} onClick={()=>setMenu(false)}>{label}</a>)}</nav>}</header>
+<main id="conteudo"><section className="hero" id="inicio"><div className="hero-lines" aria-hidden="true"/><div className="shell hero-layout"><motion.div className="hero-copy" {...reveal}><span className="eyebrow light">REPRESENTAÇÃO COMERCIAL EM EPS</span><h1>A solução certa.<br/>O apoio que seu<br/><em>projeto precisa.</em></h1><p>Da construção civil à indústria, conectamos sua necessidade às soluções em EPS da Kingspan Isoeste. Com atendimento próximo, conhecimento técnico e agilidade.</p><div className="hero-actions"><a className="button white" href="#solucoes">Conheça as soluções</a><a className="hero-text-link" href={wa()} target="_blank" rel="noopener noreferrer">Converse com um especialista</a></div><div className="hero-proof"><span><Check size={16}/>Atendimento humanizado</span><span><Check size={16}/>Apoio técnico e comercial</span></div></motion.div><motion.figure className="hero-image" {...reveal}><img src={img('monolit-painel')} alt="Painel de EPS com tela de aço em uma aplicação construtiva" fetchPriority="high"/><figcaption><span>CONSTRUÇÃO CIVIL</span><strong>Tecnologia em cada camada.</strong><small>Painel Monolit® · Kingspan Isoeste</small></figcaption><span className="image-corner" aria-hidden="true"/></motion.figure></div><div className="hero-bottom shell"><span>SILVÉRIO + <b>Kingspan Isoeste</b></span><p>Construção civil <i/> Infraestrutura <i/> Indústria</p></div></section><section className="value-strip"><div className="shell"><span><Handshake/>Atendimento de pessoa para pessoa</span><span><Layers/>Soluções para diferentes aplicações</span><span><ShieldCheck/>Compromisso com a sua compra</span></div></section>
+<section className="catalog section shell" id="solucoes"><motion.div className="section-heading" {...reveal}><div><span className="eyebrow">NOSSO PORTFÓLIO</span><h2>EPS para cada<br/><em>desafio do seu projeto.</em></h2></div><p>Explore as aplicações. Conheça os produtos e leve sua necessidade para quem entende de EPS.</p></motion.div><div className="catalog-toolbar"><div className="filters" role="group" aria-label="Filtrar soluções por aplicação">{categories.map(c=><button key={c} className={category===c?'active':''} aria-pressed={category===c} onClick={()=>setCategory(c)}>{c}</button>)}</div><label className="search"><Search size={18}/><input aria-label="Buscar solução" placeholder="Buscar solução" value={query} onChange={e=>setQuery(e.target.value)}/></label></div><p className="result-count" aria-live="polite">{shown.length} {shown.length===1?'solução encontrada':'soluções encontradas'}</p><div className="product-grid">{shown.map(p=><article className="product-card" key={p.id}><div className="card-media">{comparisons[p.id]?<Comparison product={p}/>:<button className={'product-image '+(['placa-eps','canaleta'].includes(p.image)?'contain':'')} onClick={()=>setSelected(p)} aria-label={'Conhecer '+p.name}><img src={img(p.image)} alt={p.name} loading="lazy"/><span>{p.category}</span></button>}</div><div className="product-info"><span className="product-eyebrow">{p.tag}</span><h3>{p.name}</h3><p>{p.summary}</p><button className="detail-button" onClick={()=>setSelected(p)}>Conhecer solução <span aria-hidden="true">+</span></button></div></article>)}</div>{!shown.length&&<div className="empty"><p>Nenhuma solução encontrada.</p><button className="button outline" onClick={()=>{setQuery('');setCategory('Todas');}}>Ver todas as soluções</button></div>}</section>
+<section className="applications" id="aplicacoes"><div className="shell"><motion.div className="section-heading" {...reveal}><div><span className="eyebrow">DO PROJETO À APLICAÇÃO</span><h2>Material leve.<br/><em>Possibilidades amplas.</em></h2></div><p>O EPS está presente em diferentes etapas e setores. A escolha começa pela aplicação e pela especificação do seu projeto.</p></motion.div><div className="application-grid">{[{name:'Construção civil',cat:'Construção civil',img:'monolit-obra',icon:Building2,text:'Da fundação ao fechamento, soluções para diferentes etapas da obra.'},{name:'Infraestrutura',cat:'Infraestrutura',img:'geofoam-aplicacao',icon:Layers,text:'Aplicações de enchimento leve para demandas de engenharia.'},{name:'Indústria',cat:'Indústria',img:'placa-eps',icon:Factory,text:'Fornecimento para recortadores, transformadores e fabricantes de colchões.'}].map(a=><a href="#solucoes" key={a.name} onClick={()=>{setCategory(a.cat);setQuery('');}}><img loading="lazy" src={img(a.img)} alt={'EPS para '+a.name}/><div><a.icon/><h3>{a.name}</h3><p>{a.text}</p></div></a>)}</div></div></section>
+<section className="about section shell" id="sobre"><div className="about-visual"><img src={img('lajotas-aplicacao')} loading="lazy" alt="Aplicação de EPS em laje apresentada pela Kingspan Isoeste"/><div className="about-label"><span>ATENDIMENTO HUMANIZADO</span><strong>Gente que entende.<br/>Gente que acompanha.</strong></div></div><motion.div className="about-copy" {...reveal}><span className="eyebrow">SOBRE A SILVÉRIO</span><h2>Uma relação que vai<br/><em>além do pedido.</em></h2><p>A Silvério Representação aproxima construtoras, engenheiros, lajeiros e compradores industriais das soluções em EPS da Kingspan Isoeste.</p><p>Nosso trabalho começa ouvindo. Entendemos a aplicação, consultamos as opções e alinhamos as condições de fornecimento, com transparência e atenção ao que sua compra precisa.</p><ul>{['Atendimento próximo e ágil','Conhecimento técnico e comercial','Confiança e relacionamento de longo prazo'].map(t=><li key={t}><Check/>{t}</li>)}</ul><a className="button primary" href={wa()} target="_blank" rel="noopener noreferrer">Fale com a nossa equipe</a></motion.div></section>
+<section className="materials section" id="materiais"><div className="shell"><div className="section-heading"><div><span className="eyebrow">PARA CONHECER MELHOR</span><h2>Materiais do<br/><em>fabricante.</em></h2></div><p>Consulte as apresentações visuais dos produtos. Para especificações, medidas e informações de fornecimento, converse com a Silvério.</p></div><div className="materials-grid">{[{name:'BaldramePRO',img:'baldrame-detalhe',desc:'Apresentação da forma leve para vigas.'},{name:'Lajotas de EPS',img:'manual-lajotas',desc:'Material de aplicação do fabricante.'},{name:'Geofoam',img:'geofoam-aplicacao',desc:'Apresentação de aplicação em infraestrutura.'}].map(m=><a key={m.name} href={img(m.img)} target="_blank" rel="noopener noreferrer"><FileImage size={24}/><div><h3>{m.name}</h3><p>{m.desc}</p><span>Ver material</span></div></a>)}</div></div></section>
+<section className="guides section shell" id="blog"><div className="section-heading"><div><span className="eyebrow">GUIA DE COMPRA</span><h2>Uma boa compra<br/><em>começa na conversa.</em></h2></div></div><div className="guide-grid">{[{title:'O que enviar para uma cotação?',text:'Aplicação, dimensões, quantidade, cidade de entrega e prazo desejado. Se o projeto especifica o material, envie também essa informação.'},{title:'Como escolher a peça para a obra?',text:'Comece pela especificação do responsável técnico. A Silvério ajuda a consultar as opções de produto, disponibilidade e condições comerciais.'},{title:'Como programar compras recorrentes?',text:'Compartilhe o consumo por lote, a frequência de compra e o local de entrega. Esses dados ajudam a alinhar o fornecimento ao seu processo.'}].map(g=><details key={g.title}><summary>{g.title}<span>+</span></summary><p>{g.text}</p></details>)}</div></section>
+<section className="contact section" id="contato"><div className="shell contact-grid"><div className="contact-copy"><span className="eyebrow light">VAMOS CONVERSAR</span><h2>O seu próximo projeto<br/>começa com um<br/><em>bom atendimento.</em></h2><p>Conte o que você precisa. A Silvério ajuda a consultar o material e alinhar sua compra.</p><a href={'tel:+'+contact.phone}><Phone size={19}/>{contact.display}</a><a href={'mailto:'+contact.email}><Mail size={19}/>{contact.email}</a></div><form onSubmit={e=>{e.preventDefault();window.open(wa('Olá! Gostaria de solicitar uma cotação.\nProduto/aplicação: '+(topic||'Gostaria de orientação')+'\nCidade de entrega: '+(city||'A definir')+'\nQuantidade/medidas: '+(quantity||'A definir')+'\nDetalhes: '+(message||'Gostaria de conversar com a equipe.')),'_blank','noopener,noreferrer');}}><h3>Conte sobre a sua necessidade</h3><label>Produto ou aplicação<select value={topic} onChange={e=>setTopic(e.target.value)}><option value="">Quero ajuda para escolher</option>{products.map(p=><option key={p.id}>{p.name}</option>)}</select></label><div className="form-row"><label>Cidade de entrega<input maxLength={100} value={city} onChange={e=>setCity(e.target.value)} placeholder="Cidade / UF" autoComplete="address-level2"/></label><label>Quantidade ou medidas<input maxLength={150} value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Informe o que já tem"/></label></div><label>Detalhes do projeto<textarea rows={3} maxLength={1000} value={message} onChange={e=>setMessage(e.target.value)} placeholder="Aplicação, prazo e outras informações"/></label><button className="button primary" type="submit"><MessageCircle size={18}/>Continuar pelo WhatsApp</button><small>A mensagem será preparada no WhatsApp. Você confere e envia.</small></form></div></section></main>
+<footer className="footer"><div className="shell footer-main"><a className="brand" href="#inicio"><Brand/></a><p>Soluções em EPS.<br/>Relações construídas com confiança.</p><a href={wa()} target="_blank" rel="noopener noreferrer">Atendimento pelo WhatsApp</a></div><div className="shell footer-bottom"><span>© {new Date().getFullYear()} Silvério Representação</span><span>Materiais de produtos: Kingspan Isoeste.</span><a href="#inicio">Voltar ao início</a></div></footer><a className="floating-whatsapp" aria-label="Conversar com a Silvério pelo WhatsApp" href={wa()} target="_blank" rel="noopener noreferrer"><MessageCircle size={25}/></a><Detail product={selected} onClose={()=>setSelected(null)}/></>;}
+if(typeof document!=='undefined'){const root=document.getElementById('root')!;if(root.hasChildNodes())hydrateRoot(root,<App/>);else createRoot(root).render(<App/>);}
